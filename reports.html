@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}Reports - ParkSmart{% endblock %}
+{% block page_title %}Reports & Analytics{% endblock %}
+{% block page_sub %}Business insights{% endblock %}
+{% block extra_css %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+{% endblock %}
+{% block content %}
+<!-- SUMMARY CARDS -->
+<div class="stat-grid mb-6">
+  <div class="stat-card yellow">
+    <div class="stat-icon yellow"><i class="fas fa-indian-rupee-sign"></i></div>
+    <div class="stat-value">₹{{ "%.0f"|format(total_revenue) }}</div>
+    <div class="stat-label">Total Revenue</div>
+  </div>
+  <div class="stat-card blue">
+    <div class="stat-icon blue"><i class="fas fa-cars"></i></div>
+    <div class="stat-value">{{ total_vehicles }}</div>
+    <div class="stat-label">Total Vehicles Served</div>
+  </div>
+  <div class="stat-card green">
+    <div class="stat-icon green"><i class="fas fa-clock"></i></div>
+    <div class="stat-value">{{ "%.0f"|format(avg_duration) }}m</div>
+    <div class="stat-label">Avg Stay Duration</div>
+  </div>
+  <div class="stat-card red">
+    <div class="stat-icon red"><i class="fas fa-calendar-day"></i></div>
+    <div class="stat-value">{{ daily|length }}</div>
+    <div class="stat-label">Active Days</div>
+  </div>
+</div>
+
+<div class="grid-2 mb-6">
+  <!-- DAILY REVENUE CHART -->
+  <div class="card">
+    <div class="card-title"><i class="fas fa-chart-bar text-accent"></i> Daily Revenue (Last 7 Days)</div>
+    <canvas id="revenueChart" height="220"></canvas>
+  </div>
+
+  <!-- VEHICLE TYPE PIE -->
+  <div class="card">
+    <div class="card-title"><i class="fas fa-chart-pie text-accent"></i> Revenue by Vehicle Type</div>
+    <canvas id="typeChart" height="220"></canvas>
+  </div>
+</div>
+
+<!-- DAILY TABLE -->
+<div class="card mb-6">
+  <div class="card-title"><i class="fas fa-table text-accent"></i> Daily Breakdown</div>
+  {% if daily %}
+  <table>
+    <thead>
+      <tr><th>Date</th><th>Vehicles</th><th>Revenue</th><th>Avg per Vehicle</th></tr>
+    </thead>
+    <tbody>
+      {% for d in daily %}
+      <tr>
+        <td style="font-weight:600">{{ d.date }}</td>
+        <td>{{ d.count }}</td>
+        <td style="color:var(--accent);font-weight:700">₹{{ "%.2f"|format(d.revenue) }}</td>
+        <td style="color:var(--muted)">₹{{ "%.2f"|format(d.revenue/d.count if d.count else 0) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div style="text-align:center;padding:40px;color:var(--muted)">No data yet</div>
+  {% endif %}
+</div>
+
+<!-- VEHICLE TYPE STATS -->
+<div class="card">
+  <div class="card-title"><i class="fas fa-car text-accent"></i> Stats by Vehicle Type</div>
+  <div class="grid-3">
+    {% for t in type_stats %}
+    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:20px;text-align:center">
+      <div style="font-size:36px;margin-bottom:10px">{% if t.vehicle_type=='car' %}🚗{% elif t.vehicle_type=='bike' %}🏍️{% else %}🚛{% endif %}</div>
+      <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800">{{ t.count }}</div>
+      <div style="font-size:12px;color:var(--muted);text-transform:capitalize;margin-bottom:8px">{{ t.vehicle_type }}s parked</div>
+      <div style="font-size:18px;font-weight:700;color:var(--accent)">₹{{ "%.0f"|format(t.revenue) }}</div>
+      <div style="font-size:11px;color:var(--muted)">Revenue</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+const chartDefaults = {
+  color: '#8892a4',
+  borderColor: '#1e2330',
+};
+Chart.defaults.color = '#8892a4';
+Chart.defaults.borderColor = '#1e2330';
+
+// DAILY REVENUE
+const dailyData = {{ daily | tojson }};
+const labels = dailyData.map(d => d.date).reverse();
+const revenues = dailyData.map(d => d.revenue).reverse();
+new Chart(document.getElementById('revenueChart'), {
+  type: 'bar',
+  data: {
+    labels,
+    datasets: [{
+      label: 'Revenue (₹)',
+      data: revenues,
+      backgroundColor: 'rgba(240,180,41,0.3)',
+      borderColor: '#f0b429',
+      borderWidth: 2,
+      borderRadius: 6
+    }]
+  },
+  options: { responsive:true, plugins:{ legend:{ display:false } }, scales:{ x:{ grid:{ color:'#1e2330' } }, y:{ grid:{ color:'#1e2330' }, ticks:{ callback: v => '₹'+v } } } }
+});
+
+// TYPE PIE
+const typeData = {{ type_stats | tojson }};
+new Chart(document.getElementById('typeChart'), {
+  type: 'doughnut',
+  data: {
+    labels: typeData.map(t => t.vehicle_type),
+    datasets: [{
+      data: typeData.map(t => t.revenue),
+      backgroundColor: ['rgba(59,130,246,0.7)','rgba(34,197,94,0.7)','rgba(239,68,68,0.7)'],
+      borderColor: ['#3b82f6','#22c55e','#ef4444'],
+      borderWidth: 2
+    }]
+  },
+  options: { responsive:true, plugins:{ legend:{ position:'bottom' } }, cutout:'65%' }
+});
+</script>
+{% endblock %}

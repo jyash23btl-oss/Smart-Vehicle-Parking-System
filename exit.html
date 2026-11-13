@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}Vehicle Exit - ParkSmart{% endblock %}
+{% block page_title %}Vehicle Exit{% endblock %}
+{% block page_sub %}Process vehicle checkout{% endblock %}
+{% block content %}
+<div class="grid-2">
+  <div>
+    <div class="card mb-6">
+      <div class="card-title"><i class="fas fa-magnifying-glass text-accent"></i> Search Vehicle</div>
+      <form method="POST" action="{{ url_for('exit_vehicle') }}">
+        <div class="form-group" style="margin-bottom:16px">
+          <label>Ticket ID or Vehicle Number</label>
+          <input type="text" name="search" placeholder="TKT-XXXXXXXX or TN01AB1234" required style="text-transform:uppercase">
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center">
+          <i class="fas fa-search"></i> Find Vehicle
+        </button>
+      </form>
+    </div>
+
+    {% if vehicle %}
+    <div class="card" style="border:2px solid var(--accent)">
+      <div class="card-title"><i class="fas fa-car text-accent"></i> Vehicle Found</div>
+      {% set entry = vehicle.entry_time %}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+        <div style="background:var(--bg3);padding:12px;border-radius:10px">
+          <div style="font-size:11px;color:var(--muted)">Ticket</div>
+          <div style="font-family:monospace;color:var(--accent);font-weight:700">{{ vehicle.ticket_id }}</div>
+        </div>
+        <div style="background:var(--bg3);padding:12px;border-radius:10px">
+          <div style="font-size:11px;color:var(--muted)">Vehicle</div>
+          <div style="font-weight:700">{{ vehicle.vehicle_number }}</div>
+        </div>
+        <div style="background:var(--bg3);padding:12px;border-radius:10px">
+          <div style="font-size:11px;color:var(--muted)">Owner</div>
+          <div style="font-weight:700">{{ vehicle.owner_name }}</div>
+        </div>
+        <div style="background:var(--bg3);padding:12px;border-radius:10px">
+          <div style="font-size:11px;color:var(--muted)">Slot</div>
+          <div style="font-weight:700;color:var(--green)">{{ vehicle.slot_number }}</div>
+        </div>
+        <div style="background:var(--bg3);padding:12px;border-radius:10px;grid-column:1/-1">
+          <div style="font-size:11px;color:var(--muted)">Entry Time</div>
+          <div style="font-weight:700">{{ vehicle.entry_time }}</div>
+        </div>
+      </div>
+      <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:14px;margin-bottom:20px;text-align:center">
+        <div style="font-size:12px;color:var(--muted)">Rate: ₹{{ get_rate(vehicle.vehicle_type) }}/hr • Charges calculated at checkout</div>
+      </div>
+      <form method="POST" action="{{ url_for('process_exit') }}">
+        <input type="hidden" name="ticket_id" value="{{ vehicle.ticket_id }}">
+        <div class="form-group" style="margin-bottom:16px">
+          <label>Payment Mode</label>
+          <select name="payment_mode" required>
+            <option value="cash">💵 Cash</option>
+            <option value="upi">📱 UPI / QR</option>
+            <option value="card">💳 Card</option>
+            <option value="wallet">👜 Digital Wallet</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-danger" style="width:100%;justify-content:center;padding:14px">
+          <i class="fas fa-right-from-bracket"></i> Process Exit & Generate Bill
+        </button>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:20px">
+    <div class="card">
+      <div class="card-title"><i class="fas fa-info-circle text-accent"></i> Exit Process</div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        {% for step, icon, desc in [
+          ('Search', 'magnifying-glass', 'Enter your ticket ID or vehicle number'),
+          ('Review', 'eye', 'Verify vehicle details and calculated charges'),
+          ('Pay', 'credit-card', 'Choose your preferred payment method'),
+          ('Receipt', 'receipt', 'Collect your receipt and free your slot')
+        ] %}
+        <div style="display:flex;align-items:flex-start;gap:14px">
+          <div style="width:36px;height:36px;min-width:36px;background:rgba(240,180,41,0.15);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--accent)">
+            <i class="fas fa-{{ icon }}"></i>
+          </div>
+          <div>
+            <div style="font-weight:600;font-size:14px">{{ loop.index }}. {{ step }}</div>
+            <div style="font-size:13px;color:var(--muted)">{{ desc }}</div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><i class="fas fa-clock text-accent"></i> Billing Info</div>
+      <div style="font-size:13px;color:var(--muted);line-height:1.8">
+        • Minimum charge: 1 hour<br>
+        • Billing is per hour (rounded up)<br>
+        • No refunds after payment<br>
+        • Keep your receipt for records
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
